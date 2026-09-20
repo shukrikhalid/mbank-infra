@@ -75,6 +75,12 @@ terraform apply
 - **[IaC Strategy](docs/iac-strategy.md)** — Terraform vs CDK decision, best practices, state management
 - **[Getting Started](docs/getting-started.md)** — Onboarding guide for app teams
 
+### AI Assistance & Developer Standards
+
+- **[AI Assistance Documentation](docs/AI_ASSISTANCE.md)** — GitHub Copilot usage, areas of application, validation process
+- **[Copilot Instructions](.copilot-instructions.md)** — Developer guidelines for consistent AI-assisted infrastructure code
+- **[Compliance Standards](docs/control-matrix.md)** — Security guardrails enforced by pipeline screening
+
 ### Architecture & Diagrams
 
 Mbank infrastructure is organized around a **2-account-per-team model** with a hub-and-spoke network topology, centralized configuration management, and multi-layer compliance enforcement.
