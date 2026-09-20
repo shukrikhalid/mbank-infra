@@ -1,0 +1,15 @@
+# Entire org/ layer — platform team approval required
+/org/                    @mbank/platform-team
+
+# Platform modules — platform team approval required
+/platform/               @mbank/platform-team
+
+# Schema and pipeline — platform team approval required
+/pipeline/               @mbank/platform-team
+/platform/schema/        @mbank/platform-team
+
+# App team folders — each team approves their own changes
+/applications/payment/          @mbank/payments-team
+/applications/customertech/     @mbank/customertech-team
+/applications/finance/          @mbank/finance-team
+/applications/public/           @mbank/public-team

@@ -1,0 +1,60 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyIAMWriteWithoutMFA",
+      "Effect": "Deny",
+      "Action": [
+        "iam:AttachGroupPolicy",
+        "iam:AttachRolePolicy",
+        "iam:AttachUserPolicy",
+        "iam:CreateAccessKey",
+        "iam:CreateGroup",
+        "iam:CreateLoginProfile",
+        "iam:CreateRole",
+        "iam:CreateUser",
+        "iam:DeleteAccessKey",
+        "iam:DeleteGroup",
+        "iam:DeleteGroupPolicy",
+        "iam:DeleteLoginProfile",
+        "iam:DeletePolicy",
+        "iam:DeletePolicyVersion",
+        "iam:DeleteRole",
+        "iam:DeleteRolePermissionsBoundary",
+        "iam:DeleteRolePolicy",
+        "iam:DeleteUser",
+        "iam:DeleteUserPermissionsBoundary",
+        "iam:DeleteUserPolicy",
+        "iam:DetachGroupPolicy",
+        "iam:DetachRolePolicy",
+        "iam:DetachUserPolicy",
+        "iam:PutGroupPolicy",
+        "iam:PutRolePermissionsBoundary",
+        "iam:PutRolePolicy",
+        "iam:PutUserPermissionsBoundary",
+        "iam:PutUserPolicy",
+        "iam:SetDefaultPolicyVersion",
+        "iam:UpdateAccessKey",
+        "iam:UpdateAssumeRolePolicy",
+        "iam:UpdateGroup",
+        "iam:UpdateLoginProfile",
+        "iam:UpdateRole",
+        "iam:UpdateRoleDescription",
+        "iam:UpdateUser"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "BoolIfExists": {
+          "aws:MultiFactorAuthPresent": "false"
+        },
+        "ArnNotLike": {
+          "aws:PrincipalARN": [
+            "arn:aws:iam::*:role/PlatformAutomationRole",
+            "arn:aws:iam::*:role/AWSControlTowerExecution",
+            "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_*"
+          ]
+        }
+      }
+    }
+  ]
+}

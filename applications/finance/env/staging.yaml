@@ -1,0 +1,24 @@
+# Staging environment: finance-api
+
+environment: staging
+data_classification: restricted
+
+compute:
+  cpu: 512
+  memory: 1024
+  desired_count: 2
+
+databases:
+  - name: finance-db
+    instance_class: db.r6g.large
+    num_instances: 2
+
+monitoring:
+  alarm_cpu_threshold: 80
+  alarm_error_rate_threshold: 5
+
+tags:
+  Environment: staging
+  Team: finance
+  CostCentre: CC-FIN-001
+  DataClassification: restricted

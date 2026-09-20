@@ -1,0 +1,25 @@
+# Staging environment: payment-api
+# Realistic workload, prod-like configuration, less strict monitoring
+
+environment: staging
+data_classification: confidential
+
+compute:
+  cpu: 512
+  memory: 1024
+  desired_count: 2
+
+databases:
+  - name: payment-db
+    instance_class: db.r6g.medium
+    num_instances: 2
+
+monitoring:
+  alarm_cpu_threshold: 80
+  alarm_error_rate_threshold: 5
+
+tags:
+  Environment: staging
+  Team: payments
+  CostCentre: CC-PAY-001
+  DataClassification: confidential

@@ -1,0 +1,106 @@
+name: org-apply
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "org/**"
+      - "platform/**"
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: org-apply
+  cancel-in-progress: false  # never cancel an in-flight apply
+
+jobs:
+  terraform-apply:
+    name: Terraform Apply — org layer
+    runs-on: ubuntu-latest
+    environment: platform-prod  # GitHub Environment gate — requires 2 approvals from platform-team
+    defaults:
+      run:
+        working-directory: org
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PLATFORM_ROLE_ARN }}
+          aws-region: ap-southeast-5
+          role-session-name: GitHubActions-OrgApply-${{ github.run_id }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7"
+          terraform_wrapper: false  # raw exit codes needed for apply
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="bucket=mbank-tfstate" \
+            -backend-config="key=org/terraform.tfstate" \
+            -backend-config="region=ap-southeast-5" \
+            -backend-config="dynamodb_table=mbank-tfstate-lock" \
+            -backend-config="encrypt=true" \
+            -input=false
+
+      # Re-plan from the merged main state — ensures apply matches exactly what is on main,
+      # not a potentially stale plan artifact from the PR.
+      - name: Terraform Plan (pre-apply)
+        run: terraform plan -no-color -input=false -out=org.tfplan
+
+      - name: Destroy guard — block deletion of protected resources
+        run: |
+          terraform show -json org.tfplan > org.tfplan.json
+          PROTECTED=(
+            aws_organizations_organization
+            aws_organizations_organizational_unit
+            aws_kms_key
+            aws_cloudtrail
+            aws_config_configuration_recorder
+            aws_guardduty_detector
+            aws_security_hub_account
+          )
+          FOUND=0
+          for resource in "${PROTECTED[@]}"; do
+            if jq -e --arg r "$resource" \
+              '.resource_changes[] | select(.type == $r and (.change.actions | contains(["delete"])))' \
+              org.tfplan.json > /dev/null 2>&1; then
+              echo "::error::Plan destroys protected resource type: ${resource}"
+              FOUND=1
+            fi
+          done
+          [ "$FOUND" -eq 0 ] || exit 1
+
+      - name: Terraform Apply
+        run: terraform apply -no-color -input=false org.tfplan
+
+      - name: Upload plan evidence to S3
+        if: always()  # upload even if apply failed — evidence of the attempt
+        env:
+          TIMESTAMP: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          EVIDENCE_KEY="org/apply-evidence/${GITHUB_SHA}-${TIMESTAMP}.tfplan.json"
+          # Annotate the evidence JSON with audit metadata before upload
+          jq \
+            --arg actor "${{ github.actor }}" \
+            --arg sha    "${{ github.sha }}" \
+            --arg ref    "${{ github.ref }}" \
+            --arg ts     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg run    "${{ github.run_id }}" \
+            '. + {_audit: {actor: $actor, commit_sha: $sha, ref: $ref, applied_at: $ts, workflow_run_id: $run}}' \
+            org.tfplan.json > org.tfplan.annotated.json
+
+          aws s3 cp org.tfplan.annotated.json \
+            "s3://mbank-evidence/${EVIDENCE_KEY}" \
+            --sse aws:kms \
+            --metadata "actor=${{ github.actor }},commit=${{ github.sha }},run=${{ github.run_id }}"
+
+          echo "Evidence uploaded to s3://mbank-evidence/${EVIDENCE_KEY}"

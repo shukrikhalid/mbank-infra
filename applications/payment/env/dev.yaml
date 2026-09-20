@@ -1,0 +1,25 @@
+# Development environment: payment-api
+# Low cost, single instance, relaxed monitoring
+
+environment: dev
+data_classification: public
+
+compute:
+  cpu: 256
+  memory: 512
+  desired_count: 1
+
+databases:
+  - name: payment-db
+    instance_class: db.t3.small
+    num_instances: 1
+
+monitoring:
+  alarm_cpu_threshold: 95
+  alarm_error_rate_threshold: 50
+
+tags:
+  Environment: dev
+  Team: payments
+  CostCentre: CC-PAY-001
+  DataClassification: public

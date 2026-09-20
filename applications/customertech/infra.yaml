@@ -1,0 +1,38 @@
+# CustomerTech (CRM) Application
+# PDPA compliance: customer data storage and retrieval
+
+app: crm-api
+team: customertech
+cost_centre: CC-CRM-001
+
+git_repo: https://github.com/mbank/crm-api
+contact_email: customertech-team@mbank.com
+slo_availability: 99.5
+slo_latency_p99_ms: 1000
+
+compute:
+  type: ecs
+  container_port: 8080
+  health_check_path: /health
+
+public_facing: false
+domain: crm-api.internal.mbank.com
+
+databases:
+  - name: crm-db
+    engine: aurora-postgresql
+    storage_encrypted: true
+  - name: crm-cache
+    engine: redis
+    storage_encrypted: true
+
+features:
+  waf: false
+  cdn: false
+  xray: true
+  rds_proxy: true
+
+secrets:
+  - /mbank/crm/db-password
+  - /mbank/crm/salesforce-token
+  - /mbank/crm/encryption-key

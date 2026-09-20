@@ -1,0 +1,46 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyActionsOutsideApprovedRegions",
+      "Effect": "Deny",
+      "NotAction": [
+        "iam:*",
+        "sts:*",
+        "route53:*",
+        "cloudfront:*",
+        "waf:*",
+        "wafv2:*",
+        "shield:*",
+        "organizations:*",
+        "account:*",
+        "support:*",
+        "trustedadvisor:*",
+        "health:*",
+        "globalaccelerator:*",
+        "billing:*",
+        "budgets:*",
+        "ce:*",
+        "cur:*",
+        "pricing:*",
+        "aws-marketplace:*"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEquals": {
+          "aws:RequestedRegion": [
+            "ap-southeast-5",
+            "ap-southeast-2"
+          ]
+        },
+        "ArnNotLike": {
+          "aws:PrincipalARN": [
+            "arn:aws:iam::*:role/PlatformAutomationRole",
+            "arn:aws:iam::*:role/AWSControlTowerExecution",
+            "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_*"
+          ]
+        }
+      }
+    }
+  ]
+}

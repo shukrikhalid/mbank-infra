@@ -1,0 +1,71 @@
+# Task 16 — Production Defaults
+# Org-wide prod defaults merged into every infra.yaml before generation
+# Enforces regulatory compliance: BNM, PCI DSS v3.2.1, PDPA
+#
+# Compliance Context:
+#   - BNM (Bank Negara Malaysia): data residency, 7-year audit retention
+#   - PCI DSS: payment processing requirements for confidential data classification
+#   - PDPA: personal data protection for internal/public classifications
+#
+# Region Strategy:
+#   - Primary (ap-southeast-5/KL): Mbank HQ, BNM data residency requirement
+#   - DR (ap-southeast-2/Sydney): Political independence, stable governance, PDPA acceptable
+
+region: ap-southeast-5
+dr_region: ap-southeast-2
+
+encryption:
+  at_rest: true
+  in_transit: true
+
+network:
+  vpc_id: vpc-org-prod
+  subnet_type: private
+  multi_az: true
+
+logging:
+  cloudtrail: enabled
+  vpc_flow_logs: enabled
+  app_log_retention_days: 90
+  audit_log_retention_days: 2555  # 7 years (BNM requirement)
+
+backup:
+  enabled: true
+  retention_days: 35              # Minimum for BNM compliance
+  cross_region_copy: true
+  vault_lock: true
+
+compute:
+  min_instances: 2                # HA: prevent single point of failure
+  enable_xray: true
+
+monitoring:
+  alarm_cpu_threshold: 80         # percentage
+  alarm_memory_threshold: 80      # percentage
+  alarm_5xx_threshold: 5          # per 5 minutes
+  alarm_latency_p99_ms: 2000      # milliseconds
+  enable_dashboard: true
+
+databases:
+  deletion_protection: true       # Mandatory for prod
+  multi_az: true                  # Mandatory for prod HA
+  backup_retention_days: 35       # Minimum
+  enhanced_monitoring: true
+  performance_insights: true
+  pitr_enabled: true
+
+tagging:
+  required_tags:
+    - Environment
+    - Team
+    - CostCentre
+    - DataClassification
+
+compliance:
+  guardduty: enabled
+  security_hub: enabled
+  config_rules: enabled
+  pci_dss: enabled                # Conditional: payment team only (enforcer validates)
+  mfa_enforcement: true
+  imdsv2_required: true           # EC2 IMDSv2 mandatory
+  block_public_access: true       # S3 public access blocked

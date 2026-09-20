@@ -1,0 +1,60 @@
+# Task 16 — Staging Defaults
+# Balances security controls with cost efficiency
+# Matches prod security posture but relaxes operational constraints
+
+region: ap-southeast-5
+
+encryption:
+  at_rest: true
+  in_transit: true
+
+network:
+  vpc_id: vpc-org-staging
+  subnet_type: private
+  multi_az: false                 # Cost saving: single AZ acceptable for staging
+
+logging:
+  cloudtrail: enabled
+  vpc_flow_logs: enabled
+  app_log_retention_days: 30
+  audit_log_retention_days: 365   # 1 year (reduced from prod 7 years)
+
+backup:
+  enabled: true
+  retention_days: 7               # Reduced from prod 35 days
+  cross_region_copy: false        # Cost saving: no cross-region copy
+  vault_lock: false
+
+compute:
+  min_instances: 1                # Cost saving: single instance allowed
+  enable_xray: false              # Cost saving: disable X-Ray by default
+
+monitoring:
+  alarm_cpu_threshold: 90         # Relaxed from prod 80%
+  alarm_memory_threshold: 90      # Relaxed from prod 80%
+  alarm_5xx_threshold: 10         # Relaxed from prod 5
+  alarm_latency_p99_ms: 3000      # Relaxed from prod 2000ms
+  enable_dashboard: false         # Cost saving: no dashboard
+
+databases:
+  deletion_protection: false      # Relaxed for staging
+  multi_az: false                 # Cost saving: single AZ
+  backup_retention_days: 7        # Reduced from prod 35 days
+  enhanced_monitoring: false      # Cost saving
+  performance_insights: false     # Cost saving
+  pitr_enabled: true              # Keep for testing disaster recovery
+
+tagging:
+  required_tags:
+    - Environment
+    - Team
+    - CostCentre
+    - DataClassification
+
+compliance:
+  guardduty: enabled
+  security_hub: enabled
+  config_rules: enabled
+  mfa_enforcement: false          # Relaxed for developers
+  imdsv2_required: false          # Flexible for testing
+  block_public_access: true       # Keep: security baseline

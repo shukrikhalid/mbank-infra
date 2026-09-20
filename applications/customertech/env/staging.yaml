@@ -1,0 +1,27 @@
+# Staging environment: crm-api
+
+environment: staging
+data_classification: internal
+
+compute:
+  cpu: 512
+  memory: 1024
+  desired_count: 2
+
+databases:
+  - name: crm-db
+    instance_class: db.r6g.medium
+    num_instances: 2
+  - name: crm-cache
+    node_type: cache.t3.medium
+    num_cache_nodes: 2
+
+monitoring:
+  alarm_cpu_threshold: 80
+  alarm_error_rate_threshold: 5
+
+tags:
+  Environment: staging
+  Team: customertech
+  CostCentre: CC-CRM-001
+  DataClassification: internal

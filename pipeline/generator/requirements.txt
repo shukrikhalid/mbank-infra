@@ -1,0 +1,5 @@
+# Task 13 — Pipeline Dependencies
+# Install: pip install -r pipeline/generator/requirements.txt
+
+pyyaml>=6.0
+jsonschema>=4.0

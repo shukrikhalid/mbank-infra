@@ -1,0 +1,29 @@
+# Production environment: crm-api
+# PDPA: customer data protection with encryption and access controls
+
+environment: prod
+data_classification: internal
+
+compute:
+  cpu: 512
+  memory: 1024
+  desired_count: 2
+
+databases:
+  - name: crm-db
+    instance_class: db.r6g.medium
+    num_instances: 2
+  - name: crm-cache
+    node_type: cache.t3.medium
+    num_cache_nodes: 2
+
+monitoring:
+  alarm_cpu_threshold: 75
+  alarm_error_rate_threshold: 1
+  pagerduty_service_key_secret: /mbank/customertech/pagerduty-key
+
+tags:
+  Environment: prod
+  Team: customertech
+  CostCentre: CC-CRM-001
+  DataClassification: internal

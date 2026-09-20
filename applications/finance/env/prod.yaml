@@ -1,0 +1,27 @@
+# Production environment: finance-api
+# BNM + PCI DSS compliance: financial reporting with maximum protection
+# 🔒 Enforcer locks: encryption=true, deletion_protection=true, multi_az=true, backup_retention=2555d (7yr)
+
+environment: prod
+data_classification: restricted
+
+compute:
+  cpu: 1024
+  memory: 2048
+  desired_count: 3
+
+databases:
+  - name: finance-db
+    instance_class: db.r6g.xlarge
+    num_instances: 3
+
+monitoring:
+  alarm_cpu_threshold: 60
+  alarm_error_rate_threshold: 0.5
+  pagerduty_service_key_secret: /mbank/finance/pagerduty-key
+
+tags:
+  Environment: prod
+  Team: finance
+  CostCentre: CC-FIN-001
+  DataClassification: restricted

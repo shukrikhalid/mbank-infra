@@ -1,0 +1,35 @@
+# Payment API Application
+# PCI DSS compliance scope: payment processing, confidential data
+
+app: payment-api
+team: payments
+cost_centre: CC-PAY-001
+
+git_repo: https://github.com/mbank/payment-api
+contact_email: payments-team@mbank.com
+slo_availability: 99.9
+slo_latency_p99_ms: 500
+
+compute:
+  type: ecs
+  container_port: 8080
+  health_check_path: /health
+
+public_facing: false
+domain: payment-api.internal.mbank.com
+
+databases:
+  - name: payment-db
+    engine: aurora-postgresql
+    storage_encrypted: true
+
+features:
+  waf: true
+  cdn: false
+  xray: true
+  rds_proxy: true
+
+secrets:
+  - /mbank/payment/db-password
+  - /mbank/payment/stripe-api-key
+  - /mbank/payment/encryption-key

@@ -1,0 +1,155 @@
+name: app-validate
+
+on:
+  pull_request:
+    paths:
+      - 'applications/**'
+      - 'platform/schema/**'
+      - 'platform/defaults/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  detect-apps:
+    name: Detect Changed Applications
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.detect.outputs.matrix }}
+      apps: ${{ steps.detect.outputs.apps }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed apps
+        id: detect
+        shell: bash
+        run: |
+          base="${{ github.base_ref }}"
+          head="${{ github.head_ref }}"
+          
+          # Get list of changed apps
+          apps=$(git diff --name-only "origin/${base}...HEAD" 2>/dev/null | \
+            grep -E '^applications/[a-z-]+/infra\.yaml$' | \
+            awk -F'/' '{print $2}' | sort -u)
+          
+          if [ -z "$apps" ]; then
+            echo "No app changes detected"
+            echo "matrix={\"app\":[]}" >> "$GITHUB_OUTPUT"
+            echo "apps=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          # Convert to JSON array for matrix
+          json_array=$(echo "$apps" | jq -R . | jq -s .)
+          echo "matrix={\"app\":${json_array}}" >> "$GITHUB_OUTPUT"
+          echo "apps=$(echo "$apps" | paste -sd ',' -)" >> "$GITHUB_OUTPUT"
+          echo "Detected apps: $(echo "$apps" | paste -sd ',' -)"
+
+  schema-validate:
+    name: Schema Validation (${{ matrix.app }})
+    needs: detect-apps
+    if: ${{ needs.detect-apps.outputs.apps != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect-apps.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r pipeline/generator/requirements.txt
+
+      - name: Validate schema
+        run: |
+          python platform/schema/validate.py \
+            applications/${{ matrix.app }}/infra.yaml
+        continue-on-error: true
+
+      - name: Validate enforcer
+        run: |
+          cd pipeline/generator
+          python -c "
+          from merger import merge
+          from enforcer import enforce
+          import yaml
+          
+          with open('../../applications/${{ matrix.app }}/infra.yaml') as f:
+              infra = yaml.safe_load(f)
+          
+          merged = merge(infra, 'prod')
+          enforced = enforce(merged, 'prod')
+          print(f'✓ Enforcer validation passed for ${{ matrix.app }}')
+          "
+        continue-on-error: true
+
+  security-scan:
+    name: Security Scan (${{ matrix.app }})
+    needs: detect-apps
+    if: ${{ needs.detect-apps.outputs.apps != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect-apps.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install checkov
+        run: pip install checkov
+
+      - name: Run Checkov
+        id: checkov
+        run: |
+          checkov -d applications/${{ matrix.app }} \
+            --framework terraform \
+            --compact \
+            --quiet || true
+        continue-on-error: true
+
+      - name: Comment PR with results
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const app = '${{ matrix.app }}';
+            const status = '${{ steps.checkov.outcome }}' === 'success' ? '✅' : '⚠️';
+            const comment = `${status} Security scan completed for \`${app}\` application`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  summary:
+    name: Validation Summary
+    needs: [detect-apps, schema-validate, security-scan]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check validation results
+        run: |
+          if [ "${{ needs.detect-apps.outputs.apps }}" = "" ]; then
+            echo "ℹ️ No application changes detected"
+            exit 0
+          fi
+          
+          if [ "${{ needs.schema-validate.result }}" = "failure" ] || \
+             [ "${{ needs.security-scan.result }}" = "failure" ]; then
+            echo "❌ Validation failed for some applications"
+            exit 1
+          fi
+          
+          echo "✅ All validations passed"

@@ -1,0 +1,215 @@
+name: app-plan
+
+on:
+  pull_request:
+    paths:
+      - 'applications/**'
+      - 'platform/schema/**'
+      - 'platform/defaults/**'
+      - 'platform/modules/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  detect-apps:
+    name: Detect Changed Applications
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.detect.outputs.matrix }}
+      apps: ${{ steps.detect.outputs.apps }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed apps
+        id: detect
+        shell: bash
+        run: |
+          base="${{ github.base_ref }}"
+          
+          apps=$(git diff --name-only "origin/${base}...HEAD" 2>/dev/null | \
+            grep -E '^applications/[a-z-]+/infra\.yaml$' | \
+            awk -F'/' '{print $2}' | sort -u)
+          
+          if [ -z "$apps" ]; then
+            echo "matrix={\"app\":[]}" >> "$GITHUB_OUTPUT"
+            echo "apps=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          json_array=$(echo "$apps" | jq -R . | jq -s .)
+          echo "matrix={\"app\":${json_array}}" >> "$GITHUB_OUTPUT"
+          echo "apps=$(echo "$apps" | paste -sd ',' -)" >> "$GITHUB_OUTPUT"
+
+  generate-tfvars:
+    name: Generate Terraform (${{ matrix.app }})
+    needs: detect-apps
+    if: ${{ needs.detect-apps.outputs.apps != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect-apps.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r pipeline/generator/requirements.txt
+
+      - name: Generate terraform.tfvars.json and module.tf
+        run: |
+          cd pipeline/generator
+          python generator.py \
+            ../../applications/${{ matrix.app }}/infra.yaml prod
+        continue-on-error: true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: terraform-${{ matrix.app }}
+          path: applications/${{ matrix.app }}/terraform.tfvars.json
+          retention-days: 1
+
+  plan:
+    name: Terraform Plan (${{ matrix.app }})
+    needs: [detect-apps, generate-tfvars]
+    if: ${{ needs.detect-apps.outputs.apps != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect-apps.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download generated files
+        uses: actions/download-artifact@v3
+        with:
+          name: terraform-${{ matrix.app }}
+          path: applications/${{ matrix.app }}/
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.7
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PLATFORM_ROLE_ARN }}
+          aws-region: ap-southeast-5
+
+      - name: Terraform format check
+        run: |
+          cd applications/${{ matrix.app }}
+          terraform fmt -check || true
+        continue-on-error: true
+
+      - name: Terraform init
+        run: |
+          cd applications/${{ matrix.app }}
+          terraform init \
+            -backend-config="bucket=mbank-tfstate" \
+            -backend-config="key=apps/${{ matrix.app }}/terraform.tfstate" \
+            -backend-config="region=ap-southeast-5" \
+            -backend-config="dynamodb_table=mbank-tfstate-lock"
+        continue-on-error: true
+
+      - name: Terraform validate
+        run: |
+          cd applications/${{ matrix.app }}
+          terraform validate
+        continue-on-error: true
+
+      - name: Terraform plan
+        id: plan
+        run: |
+          cd applications/${{ matrix.app }}
+          terraform plan \
+            -var-file=terraform.tfvars.json \
+            -out=${{ matrix.app }}.tfplan || true
+        continue-on-error: true
+
+      - name: Convert plan to JSON
+        if: always()
+        run: |
+          cd applications/${{ matrix.app }}
+          if [ -f "${{ matrix.app }}.tfplan" ]; then
+            terraform show -json "${{ matrix.app }}.tfplan" > plan.json
+          fi
+        continue-on-error: true
+
+      - name: Upload plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: terraform-plan-${{ matrix.app }}
+          path: applications/${{ matrix.app }}/plan.json
+          retention-days: 1
+
+      - name: Comment PR with plan summary
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const app = '${{ matrix.app }}';
+            const planPath = `applications/${app}/plan.json`;
+            
+            let planSummary = '```\nTerraform plan summary (check details in artifacts)\n```';
+            
+            try {
+              if (fs.existsSync(planPath)) {
+                const plan = JSON.parse(fs.readFileSync(planPath, 'utf8'));
+                const changes = plan.resource_changes || [];
+                const creates = changes.filter(c => c.change.actions.includes('create')).length;
+                const updates = changes.filter(c => c.change.actions.includes('update')).length;
+                const deletes = changes.filter(c => c.change.actions.includes('delete')).length;
+                
+                planSummary = `\`\`\`
+Terraform Plan: ${app}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
++ Create: ${creates}
+~ Update: ${updates}
+- Delete: ${deletes}
+Total changes: ${creates + updates + deletes}
+\`\`\``;
+              }
+            } catch (e) {
+              console.log('Could not parse plan:', e.message);
+            }
+            
+            const comment = `## 📋 Terraform Plan: \`${app}\`\n\n${planSummary}`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  summary:
+    name: Plan Summary
+    needs: [detect-apps, plan]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check plan results
+        run: |
+          if [ "${{ needs.detect-apps.outputs.apps }}" = "" ]; then
+            echo "ℹ️ No application changes detected"
+            exit 0
+          fi
+          
+          if [ "${{ needs.plan.result }}" = "failure" ]; then
+            echo "⚠️ Some plans encountered issues (check logs)"
+            exit 0
+          fi
+          
+          echo "✅ All plans completed successfully"

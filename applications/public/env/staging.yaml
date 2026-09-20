@@ -1,0 +1,20 @@
+# Staging environment: public-web
+# Realistic workload, prod-like configuration for testing
+
+environment: staging
+data_classification: public
+
+compute:
+  cpu: 512
+  memory: 1024
+  desired_count: 2
+
+monitoring:
+  alarm_cpu_threshold: 85
+  alarm_error_rate_threshold: 5
+
+tags:
+  Environment: staging
+  Team: public
+  CostCentre: CC-PUB-001
+  DataClassification: public

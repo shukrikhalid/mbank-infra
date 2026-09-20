@@ -1,0 +1,61 @@
+# Task 16 — Development Defaults
+# Minimal cost configuration for development teams
+# Reduces security constraints while maintaining data protection
+
+region: ap-southeast-5
+
+encryption:
+  at_rest: true
+  in_transit: true
+
+network:
+  vpc_id: vpc-org-dev
+  subnet_type: private
+  multi_az: false
+
+logging:
+  cloudtrail: disabled            # Cost saving: disable CloudTrail for dev
+  vpc_flow_logs: disabled         # Cost saving
+  app_log_retention_days: 14      # Minimum retention
+  audit_log_retention_days: 7     # Minimal audit retention
+
+backup:
+  enabled: false                  # Cost saving: no automated backups
+  retention_days: 0
+  cross_region_copy: false
+  vault_lock: false
+
+compute:
+  min_instances: 1
+  instance_class: t3.small        # Small/burstable instances only
+  enable_xray: false
+
+monitoring:
+  alarm_cpu_threshold: 95         # Relaxed: allow high utilization
+  alarm_memory_threshold: 95      # Relaxed
+  alarm_5xx_threshold: 50         # Relaxed: allow more errors
+  alarm_latency_p99_ms: 5000      # Relaxed: slow is okay in dev
+  enable_dashboard: false         # No dashboard
+
+databases:
+  deletion_protection: false      # Allow free deletion in dev
+  multi_az: false                 # Single AZ only
+  backup_retention_days: 0        # No backups
+  enhanced_monitoring: false
+  performance_insights: false
+  pitr_enabled: false
+
+tagging:
+  required_tags:
+    - Environment
+    - Team
+    - CostCentre
+    - DataClassification
+
+compliance:
+  guardduty: disabled             # Cost saving
+  security_hub: disabled          # Cost saving
+  config_rules: disabled          # Cost saving
+  mfa_enforcement: false
+  imdsv2_required: false
+  block_public_access: true       # Keep: baseline security

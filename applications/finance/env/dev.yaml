@@ -1,0 +1,19 @@
+# Development environment: finance-api
+
+environment: dev
+data_classification: public
+
+compute:
+  cpu: 256
+  memory: 512
+  desired_count: 1
+
+monitoring:
+  alarm_cpu_threshold: 95
+  alarm_error_rate_threshold: 50
+
+tags:
+  Environment: dev
+  Team: finance
+  CostCentre: CC-FIN-001
+  DataClassification: public

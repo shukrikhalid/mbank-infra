@@ -1,0 +1,20 @@
+# Production environment: public-web
+# Public-facing website with DDoS protection (WAF + CDN)
+
+environment: prod
+data_classification: public
+
+compute:
+  cpu: 512
+  memory: 1024
+  desired_count: 2
+
+monitoring:
+  alarm_cpu_threshold: 80
+  alarm_error_rate_threshold: 2
+
+tags:
+  Environment: prod
+  Team: public
+  CostCentre: CC-PUB-001
+  DataClassification: public

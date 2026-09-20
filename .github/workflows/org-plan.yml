@@ -1,0 +1,145 @@
+name: org-plan
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "org/**"
+      - "platform/**"
+
+permissions:
+  id-token: write       # required for OIDC token exchange
+  contents: read
+  pull-requests: write  # required to post the plan comment
+
+concurrency:
+  group: org-plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  terraform-plan:
+    name: Terraform Plan — org layer
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: org
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PLATFORM_ROLE_ARN }}
+          aws-region: ap-southeast-5
+          role-session-name: GitHubActions-OrgPlan-${{ github.run_id }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7"
+          terraform_wrapper: true  # captures stdout/stderr in step outputs
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive -diff
+        continue-on-error: true  # surfaced in PR comment; does not block plan
+
+      - name: Terraform Init
+        id: init
+        run: |
+          terraform init \
+            -backend-config="bucket=mbank-tfstate" \
+            -backend-config="key=org/terraform.tfstate" \
+            -backend-config="region=ap-southeast-5" \
+            -backend-config="dynamodb_table=mbank-tfstate-lock" \
+            -backend-config="encrypt=true" \
+            -input=false
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -input=false -out=org.tfplan
+        continue-on-error: true  # failure surfaced in PR comment; exit code checked below
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: org-tfplan-pr${{ github.event.pull_request.number }}
+          path: org/org.tfplan
+          retention-days: 5  # plan artifacts kept only for the life of the PR
+
+      - name: Generate human-readable plan summary
+        id: show
+        run: terraform show -no-color org.tfplan 2>&1 | head -c 60000
+        continue-on-error: true
+
+      - name: Post plan as PR comment
+        uses: actions/github-script@v7
+        env:
+          FMT_OUTCOME: ${{ steps.fmt.outcome }}
+          INIT_OUTCOME: ${{ steps.init.outcome }}
+          VALIDATE_OUTCOME: ${{ steps.validate.outcome }}
+          PLAN_OUTCOME: ${{ steps.plan.outcome }}
+          PLAN_STDOUT: ${{ steps.plan.outputs.stdout }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { FMT_OUTCOME, INIT_OUTCOME, VALIDATE_OUTCOME, PLAN_OUTCOME, PLAN_STDOUT } = process.env;
+
+            const icon = (outcome) => outcome === 'success' ? '✅' : '❌';
+
+            const planBody = PLAN_STDOUT.length > 58000
+              ? PLAN_STDOUT.slice(0, 58000) + '\n\n… output truncated (> 58 000 chars) — download the artifact for the full plan.'
+              : PLAN_STDOUT;
+
+            const body = [
+              `## Terraform Plan — \`org\` layer`,
+              ``,
+              `| Step | Result |`,
+              `|------|--------|`,
+              `| Format \`terraform fmt\` | ${icon(FMT_OUTCOME)} ${FMT_OUTCOME} |`,
+              `| Init \`terraform init\` | ${icon(INIT_OUTCOME)} ${INIT_OUTCOME} |`,
+              `| Validate \`terraform validate\` | ${icon(VALIDATE_OUTCOME)} ${VALIDATE_OUTCOME} |`,
+              `| Plan \`terraform plan\` | ${icon(PLAN_OUTCOME)} ${PLAN_OUTCOME} |`,
+              ``,
+              `<details><summary>📋 Plan output (click to expand)</summary>`,
+              ``,
+              `\`\`\`hcl`,
+              planBody,
+              `\`\`\``,
+              `</details>`,
+              ``,
+              `*Workflow: \`${{ github.workflow }}\` | Actor: \`${{ github.actor }}\` | Commit: \`${{ github.sha }}\`*`,
+            ].join('\n');
+
+            // Replace any existing plan comment rather than appending
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes('Terraform Plan — `org` layer'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Fail if plan failed
+        if: steps.plan.outcome == 'failure'
+        run: exit 1

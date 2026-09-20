@@ -1,0 +1,226 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mbank-infra/infra-schema.json",
+  "title": "Mbank infra.yaml Schema",
+  "description": "JSON Schema for validating application infrastructure configuration (infra.yaml)",
+  "type": "object",
+  "required": ["app", "team", "environment", "cost_centre", "data_classification", "compute", "tags"],
+  "additionalProperties": false,
+  "properties": {
+    "app": {
+      "type": "string",
+      "description": "Application name (lowercase alphanumeric with hyphens)",
+      "pattern": "^[a-z0-9-]+$",
+      "maxLength": 40
+    },
+    "team": {
+      "type": "string",
+      "description": "Team responsible for the application",
+      "enum": ["payments", "customertech", "finance", "public"]
+    },
+    "environment": {
+      "type": "string",
+      "description": "Deployment environment",
+      "enum": ["prod", "staging", "dev"]
+    },
+    "cost_centre": {
+      "type": "string",
+      "description": "Cost centre for billing and allocation",
+      "pattern": "^CC-[A-Z]+-[0-9]+$"
+    },
+    "data_classification": {
+      "type": "string",
+      "description": "Data classification level for encryption and access control",
+      "enum": ["public", "internal", "confidential", "restricted"]
+    },
+    "compute": {
+      "type": "object",
+      "description": "Compute resource configuration",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Compute service type",
+          "enum": ["ecs", "ec2", "eks"]
+        },
+        "cpu": {
+          "type": "number",
+          "description": "CPU allocation in units",
+          "minimum": 128,
+          "maximum": 4096
+        },
+        "memory": {
+          "type": "number",
+          "description": "Memory allocation in MB",
+          "minimum": 256,
+          "maximum": 30720
+        },
+        "desired_count": {
+          "type": "integer",
+          "description": "Desired number of instances/tasks",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "container_port": {
+          "type": "integer",
+          "description": "Port exposed by container",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 8080
+        },
+        "health_check_path": {
+          "type": "string",
+          "description": "Health check endpoint path",
+          "default": "/health"
+        },
+        "instance_type": {
+          "type": "string",
+          "description": "EC2 instance type (for ec2 compute only)",
+          "pattern": "^[a-z]{1,3}[0-9]+[a-z]*\\.[a-z]+$"
+        },
+        "min_size": {
+          "type": "integer",
+          "description": "Minimum number of instances in ASG",
+          "minimum": 1
+        },
+        "max_size": {
+          "type": "integer",
+          "description": "Maximum number of instances in ASG",
+          "minimum": 1
+        }
+      }
+    },
+    "public_facing": {
+      "type": "boolean",
+      "description": "Whether the application is internet-facing",
+      "default": false
+    },
+    "domain": {
+      "type": "string",
+      "description": "Custom domain name for the application",
+      "format": "hostname"
+    },
+    "databases": {
+      "type": "array",
+      "description": "Database configurations",
+      "items": {
+        "type": "object",
+        "required": ["name", "engine"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Database name"
+          },
+          "engine": {
+            "type": "string",
+            "description": "Database engine",
+            "enum": ["aurora-postgresql", "aurora-mysql", "dynamodb", "redis"]
+          },
+          "instance_class": {
+            "type": "string",
+            "description": "RDS instance class (for RDS databases)",
+            "pattern": "^db\\.[a-z0-9]+\\.[a-z0-9]+"
+          },
+          "node_type": {
+            "type": "string",
+            "description": "ElastiCache node type (for ElastiCache)",
+            "pattern": "^cache\\.[a-z0-9]+\\.[a-z0-9]+"
+          },
+          "num_instances": {
+            "type": "integer",
+            "description": "Number of instances/nodes",
+            "minimum": 1,
+            "maximum": 15
+          },
+          "storage_encrypted": {
+            "type": "boolean",
+            "const": true,
+            "description": "Storage must always be encrypted"
+          }
+        }
+      }
+    },
+    "features": {
+      "type": "object",
+      "description": "Feature flags for optional services",
+      "additionalProperties": false,
+      "properties": {
+        "waf": {
+          "type": "boolean",
+          "description": "Enable AWS WAF for the application",
+          "default": false
+        },
+        "cdn": {
+          "type": "boolean",
+          "description": "Enable CloudFront CDN",
+          "default": false
+        },
+        "xray": {
+          "type": "boolean",
+          "description": "Enable AWS X-Ray tracing",
+          "default": false
+        },
+        "rds_proxy": {
+          "type": "boolean",
+          "description": "Enable RDS Proxy for connection pooling",
+          "default": false
+        }
+      }
+    },
+    "monitoring": {
+      "type": "object",
+      "description": "Monitoring and alerting configuration",
+      "additionalProperties": false,
+      "properties": {
+        "alarm_cpu_threshold": {
+          "type": "integer",
+          "description": "CPU alarm threshold percentage",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "alarm_error_rate_threshold": {
+          "type": "number",
+          "description": "Error rate alarm threshold percentage",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "pagerduty_service_key_secret": {
+          "type": "string",
+          "description": "Secrets Manager secret name for PagerDuty integration"
+        }
+      }
+    },
+    "tags": {
+      "type": "object",
+      "description": "Required resource tags",
+      "required": ["Environment", "Team", "CostCentre", "DataClassification"],
+      "additionalProperties": true,
+      "properties": {
+        "Environment": {
+          "type": "string",
+          "enum": ["prod", "staging", "dev"]
+        },
+        "Team": {
+          "type": "string"
+        },
+        "CostCentre": {
+          "type": "string",
+          "pattern": "^CC-[A-Z]+-[0-9]+$"
+        },
+        "DataClassification": {
+          "type": "string",
+          "enum": ["public", "internal", "confidential", "restricted"]
+        }
+      }
+    },
+    "secrets": {
+      "type": "array",
+      "description": "List of Secrets Manager secret names used by the application",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

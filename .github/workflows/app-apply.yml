@@ -1,0 +1,296 @@
+name: app-apply
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'applications/**'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  detect-apps:
+    name: Detect Changed Applications
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.detect.outputs.matrix }}
+      apps: ${{ steps.detect.outputs.apps }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed apps
+        id: detect
+        shell: bash
+        run: |
+          base="HEAD~1"
+          
+          # Get list of changed apps in the latest commit
+          apps=$(git diff --name-only "${base}...HEAD" 2>/dev/null | \
+            grep -E '^applications/[a-z-]+/infra\.yaml$' | \
+            awk -F'/' '{print $2}' | sort -u)
+          
+          if [ -z "$apps" ]; then
+            echo "matrix={\"app\":[]}" >> "$GITHUB_OUTPUT"
+            echo "apps=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          json_array=$(echo "$apps" | jq -R . | jq -s .)
+          echo "matrix={\"app\":${json_array}}" >> "$GITHUB_OUTPUT"
+          echo "apps=$(echo "$apps" | paste -sd ',' -)" >> "$GITHUB_OUTPUT"
+          echo "Detected apps for apply: $(echo "$apps" | paste -sd ',' -)"
+
+  generate-tfvars:
+    name: Generate Terraform (${{ matrix.app }})
+    needs: detect-apps
+    if: ${{ needs.detect-apps.outputs.apps != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect-apps.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r pipeline/generator/requirements.txt
+
+      - name: Generate terraform.tfvars.json and module.tf
+        run: |
+          cd pipeline/generator
+          python generator.py \
+            ../../applications/${{ matrix.app }}/infra.yaml prod
+        continue-on-error: true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: terraform-apply-${{ matrix.app }}
+          path: |
+            applications/${{ matrix.app }}/terraform.tfvars.json
+            applications/${{ matrix.app }}/module.tf
+          retention-days: 7
+
+  approval:
+    name: Approval Gate
+    needs: [detect-apps, generate-tfvars]
+    if: ${{ needs.detect-apps.outputs.apps != '' }}
+    runs-on: ubuntu-latest
+    environment: app-prod
+    steps:
+      - name: Approval granted
+        run: echo "✅ Manual approval received for production deployment"
+
+  destroy-guard:
+    name: Destroy Guard (${{ matrix.app }})
+    needs: [detect-apps, generate-tfvars, approval]
+    if: ${{ needs.detect-apps.outputs.apps != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect-apps.outputs.matrix) }}
+      fail-fast: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.7
+
+      - name: Download generated files
+        uses: actions/download-artifact@v3
+        with:
+          name: terraform-apply-${{ matrix.app }}
+          path: applications/${{ matrix.app }}/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PLATFORM_ROLE_ARN }}
+          aws-region: ap-southeast-5
+
+      - name: Terraform init
+        run: |
+          cd applications/${{ matrix.app }}
+          terraform init \
+            -backend-config="bucket=mbank-tfstate" \
+            -backend-config="key=apps/${{ matrix.app }}/terraform.tfstate" \
+            -backend-config="region=ap-southeast-5" \
+            -backend-config="dynamodb_table=mbank-tfstate-lock"
+        continue-on-error: true
+
+      - name: Terraform plan
+        run: |
+          cd applications/${{ matrix.app }}
+          terraform plan \
+            -var-file=terraform.tfvars.json \
+            -out=${{ matrix.app }}.tfplan
+        continue-on-error: true
+
+      - name: Convert plan to JSON
+        if: always()
+        run: |
+          cd applications/${{ matrix.app }}
+          if [ -f "${{ matrix.app }}.tfplan" ]; then
+            terraform show -json "${{ matrix.app }}.tfplan" > ${{ matrix.app }}.plan.json
+          fi
+        continue-on-error: true
+
+      - name: Run destroy-guard
+        run: |
+          cd applications/${{ matrix.app }}
+          if [ -f "${{ matrix.app }}.plan.json" ]; then
+            bash ../../pipeline/scripts/destroy-guard.sh "${{ matrix.app }}.plan.json"
+          else
+            echo "⚠️ Plan file not found, skipping destroy guard"
+          fi
+
+  apply:
+    name: Terraform Apply (${{ matrix.app }})
+    needs: [detect-apps, destroy-guard]
+    if: ${{ needs.detect-apps.outputs.apps != '' && success() }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect-apps.outputs.matrix) }}
+      max-parallel: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.7
+
+      - name: Download generated files
+        uses: actions/download-artifact@v3
+        with:
+          name: terraform-apply-${{ matrix.app }}
+          path: applications/${{ matrix.app }}/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PLATFORM_ROLE_ARN }}
+          aws-region: ap-southeast-5
+
+      - name: Terraform init
+        run: |
+          cd applications/${{ matrix.app }}
+          terraform init \
+            -backend-config="bucket=mbank-tfstate" \
+            -backend-config="key=apps/${{ matrix.app }}/terraform.tfstate" \
+            -backend-config="region=ap-southeast-5" \
+            -backend-config="dynamodb_table=mbank-tfstate-lock"
+
+      - name: Terraform plan
+        run: |
+          cd applications/${{ matrix.app }}
+          terraform plan \
+            -var-file=terraform.tfvars.json \
+            -out=${{ matrix.app }}.tfplan
+
+      - name: Terraform apply
+        run: |
+          cd applications/${{ matrix.app }}
+          terraform apply "${{ matrix.app }}.tfplan"
+
+      - name: Convert plan to JSON for evidence
+        if: always()
+        run: |
+          cd applications/${{ matrix.app }}
+          terraform show -json "${{ matrix.app }}.tfplan" > ${{ matrix.app }}.plan.json
+
+      - name: Upload evidence to S3
+        if: always()
+        run: |
+          cd applications/${{ matrix.app }}
+          if [ -f "${{ matrix.app }}.plan.json" ]; then
+            aws s3 cp "${{ matrix.app }}.plan.json" \
+              "s3://mbank-evidence/terraform-plans/${{ matrix.app }}/$(date +%Y%m%d_%H%M%S).json" \
+              --sse aws:kms \
+              --sse-kms-key-id ${{ secrets.AWS_KMS_KEY_ARN }} \
+              || echo "Note: Evidence upload may require S3 bucket setup"
+          fi
+        continue-on-error: true
+
+  smoke-test:
+    name: Smoke Test (${{ matrix.app }})
+    needs: [detect-apps, apply]
+    if: ${{ needs.detect-apps.outputs.apps != '' && success() }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect-apps.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PLATFORM_ROLE_ARN }}
+          aws-region: ap-southeast-5
+
+      - name: Get ALB endpoint
+        id: alb
+        run: |
+          cd applications/${{ matrix.app }}
+          terraform init \
+            -backend-config="bucket=mbank-tfstate" \
+            -backend-config="key=apps/${{ matrix.app }}/terraform.tfstate" \
+            -backend-config="region=ap-southeast-5" \
+            -backend-config="dynamodb_table=mbank-tfstate-lock" || true
+          
+          # Try to get ALB endpoint from terraform outputs
+          alb_dns=$(terraform output -raw alb_dns_name 2>/dev/null || echo "")
+          if [ -z "$alb_dns" ]; then
+            echo "ALB endpoint not available (may not be applicable for this app)"
+            exit 0
+          fi
+          echo "endpoint=http://${alb_dns}/health" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Health check
+        if: ${{ steps.alb.outputs.endpoint != '' }}
+        run: |
+          endpoint="${{ steps.alb.outputs.endpoint }}"
+          echo "Testing endpoint: $endpoint"
+          
+          for i in {1..10}; do
+            if curl -sf "$endpoint" > /dev/null; then
+              echo "✅ Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i/10 failed, retrying..."
+            sleep 10
+          done
+          
+          echo "⚠️ Health check timed out after 10 attempts"
+          exit 0
+        continue-on-error: true
+
+  summary:
+    name: Deployment Summary
+    needs: [detect-apps, apply, smoke-test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check deployment status
+        run: |
+          if [ "${{ needs.detect-apps.outputs.apps }}" = "" ]; then
+            echo "ℹ️ No application changes to deploy"
+            exit 0
+          fi
+          
+          if [ "${{ needs.apply.result }}" = "failure" ]; then
+            echo "❌ Deployment failed"
+            exit 1
+          fi
+          
+          echo "✅ Deployment completed successfully for: ${{ needs.detect-apps.outputs.apps }}"

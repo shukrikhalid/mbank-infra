@@ -1,0 +1,27 @@
+# Production environment: payment-api
+# High availability, strict SLOs, PagerDuty escalation
+# 🔒 Enforcer locks: encryption=true, deletion_protection=true, multi_az=true, backup_retention>=35
+
+environment: prod
+data_classification: confidential
+
+compute:
+  cpu: 1024
+  memory: 2048
+  desired_count: 3
+
+databases:
+  - name: payment-db
+    instance_class: db.r6g.large
+    num_instances: 3
+
+monitoring:
+  alarm_cpu_threshold: 70
+  alarm_error_rate_threshold: 0.1
+  pagerduty_service_key_secret: /mbank/payment/pagerduty-key
+
+tags:
+  Environment: prod
+  Team: payments
+  CostCentre: CC-PAY-001
+  DataClassification: confidential

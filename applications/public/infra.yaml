@@ -1,0 +1,31 @@
+# Public Web Application
+# Public-facing portal: corporate website, news, services portal
+
+app: public-web
+team: public
+cost_centre: CC-PUB-001
+
+git_repo: https://github.com/mbank/public-web
+contact_email: public-team@mbank.com
+slo_availability: 99.0
+slo_latency_p99_ms: 2000
+
+compute:
+  type: ecs
+  container_port: 3000
+  health_check_path: /
+
+public_facing: true
+domain: www.mbank.com
+
+databases: []
+
+features:
+  waf: true
+  cdn: true
+  xray: false
+  rds_proxy: false
+
+secrets:
+  - /mbank/public/cms-api-key
+  - /mbank/public/cloudflare-token

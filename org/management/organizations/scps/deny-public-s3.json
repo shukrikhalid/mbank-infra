@@ -1,0 +1,79 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyPublicBucketACL",
+      "Effect": "Deny",
+      "Action": "s3:PutBucketAcl",
+      "Resource": "*",
+      "Condition": {
+        "StringLike": {
+          "s3:x-amz-acl": [
+            "public-read",
+            "public-read-write",
+            "authenticated-read"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "DenyPublicObjectACL",
+      "Effect": "Deny",
+      "Action": "s3:PutObjectAcl",
+      "Resource": "*",
+      "Condition": {
+        "StringLike": {
+          "s3:x-amz-acl": [
+            "public-read",
+            "public-read-write",
+            "authenticated-read"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "DenyDisableBlockPublicAcls",
+      "Effect": "Deny",
+      "Action": "s3:PutBucketPublicAccessBlock",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "s3:PublicAccessBlockConfiguration/BlockPublicAcls": "false"
+        }
+      }
+    },
+    {
+      "Sid": "DenyDisableBlockPublicPolicy",
+      "Effect": "Deny",
+      "Action": "s3:PutBucketPublicAccessBlock",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "s3:PublicAccessBlockConfiguration/BlockPublicPolicy": "false"
+        }
+      }
+    },
+    {
+      "Sid": "DenyDisableIgnorePublicAcls",
+      "Effect": "Deny",
+      "Action": "s3:PutBucketPublicAccessBlock",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "s3:PublicAccessBlockConfiguration/IgnorePublicAcls": "false"
+        }
+      }
+    },
+    {
+      "Sid": "DenyDisableRestrictPublicBuckets",
+      "Effect": "Deny",
+      "Action": "s3:PutBucketPublicAccessBlock",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "s3:PublicAccessBlockConfiguration/RestrictPublicBuckets": "false"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+# Development environment: public-web
+
+environment: dev
+data_classification: public
+
+compute:
+  cpu: 256
+  memory: 512
+  desired_count: 1
+
+monitoring:
+  alarm_cpu_threshold: 95
+  alarm_error_rate_threshold: 50
+
+tags:
+  Environment: dev
+  Team: public
+  CostCentre: CC-PUB-001
+  DataClassification: public

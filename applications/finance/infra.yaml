@@ -1,0 +1,36 @@
+# Finance API Application
+# BNM + PCI DSS compliance: financial reporting, audit trails, restricted data
+
+app: finance-api
+team: finance
+cost_centre: CC-FIN-001
+
+git_repo: https://github.com/mbank/finance-api
+contact_email: finance-team@mbank.com
+slo_availability: 99.95
+slo_latency_p99_ms: 300
+
+compute:
+  type: ecs
+  container_port: 8443
+  health_check_path: /actuator/health
+
+public_facing: false
+domain: finance-api.internal.mbank.com
+
+databases:
+  - name: finance-db
+    engine: aurora-postgresql
+    storage_encrypted: true
+
+features:
+  waf: true
+  cdn: false
+  xray: true
+  rds_proxy: true
+
+secrets:
+  - /mbank/finance/db-password
+  - /mbank/finance/reporting-key
+  - /mbank/finance/audit-signing-key
+  - /mbank/finance/encryption-key
