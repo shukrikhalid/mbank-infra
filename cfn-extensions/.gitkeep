@@ -1,2 +1,11 @@
-# TODO — see tasks.md for full implementation guidance
-# Placeholder for CloudFormation extension templates (rare use cases not covered by TF provider)
+# CloudFormation Extension Templates
+# Placeholder for rare use cases not covered by Terraform AWS provider.
+# Primary IaC approach is Terraform (see tasks.md). CFN extensions are used only when:
+# - AWS Terraform provider lacks support for a specific resource
+# - Custom logic requires CloudFormation-only features
+#
+# Example use cases:
+# - Custom CloudFormation resources via Lambda-backed handlers
+# - AWS service integrations not yet available in Terraform provider
+#
+# Note: Most infrastructure is managed via Terraform modules in platform/

@@ -21,4 +21,74 @@ module "ecs_service" {
 ## Region
 Primary: `ap-southeast-5` (Malaysia). DR replication target: `ap-southeast-2` (Sydney).
 
-## See tasks.md → Task 7 for full implementation prompt
+## Implementation Details
+
+This module provisions a complete, production-ready ECS Fargate service with:
+
+### Core Compute
+- ECS Cluster with Container Insights enabled
+- Fargate launch type (serverless, no EC2 management)
+- CloudWatch Log Group with KMS encryption (90-day retention)
+- ECR repository with image scanning and immutable tags
+
+### Networking & Load Balancing
+- Application Load Balancer (internal or internet-facing)
+- Target Group with health checks on configurable path
+- Security Group with least-privilege ingress rules
+- VPC and subnet configuration
+
+### Identity & Access
+- ECS Task Execution Role (ECR pull, CloudWatch logs, Secrets Manager)
+- ECS Task Role (app-specific permissions, least privilege)
+- Secrets injection from AWS Secrets Manager
+- Environment variables for app configuration
+
+### High Availability & Scaling
+- Auto Scaling based on CPU utilization (target: 70%)
+- Circuit breaker enabled for deployment safety
+- Configurable desired count, min, and max replicas
+- Multi-AZ deployment across private subnets
+
+### Monitoring & Observability
+- CloudWatch Alarms for CPU, memory, 5xx errors, latency
+- X-Ray integration (optional)
+- Detailed logging to CloudWatch
+- Metric dashboards for operational visibility
+
+### Security & Compliance
+- Encryption at rest (CloudWatch logs with KMS)
+- Encryption in transit (HTTPS/TLS ready)
+- No root user execution in containers
+- Network policy enforcement via security groups
+
+## Variables
+
+Key configuration variables include:
+- `app_name`, `environment`, `team`, `cost_centre`, `data_classification`
+- `container_image`, `container_port`, `health_check_path`
+- `cpu` (256-4096), `memory` (512-30720)
+- `desired_count`, `min_capacity`, `max_capacity`
+- `public_facing` (bool) - ALB internet-facing or internal
+- `secrets_arns` (list) - Secrets Manager ARNs to inject
+- `enable_xray` (bool) - X-Ray daemon sidecar
+- `alarm_cpu_threshold`, `alarm_5xx_threshold`
+
+See `variables.tf` for complete variable definitions and defaults.
+
+## Outputs
+
+- `alb_dns_name` - ALB DNS for accessing the service
+- `ecs_cluster_name` - ECS cluster identifier
+- `ecr_repository_url` - ECR repository URI for image pushes
+- `service_sg_id` - Security Group ID for fine-tuning access rules
+- `task_role_arn` - Task IAM Role ARN for reference
+
+See `outputs.tf` for complete output definitions.
+
+## Integration with Pipeline
+
+Generated automatically by the CI/CD pipeline when:
+- Application `infra.yaml` specifies `compute.type: ecs`
+- `terraform apply` is executed for the application layer
+
+The pipeline generates Terraform code that invokes this module with variables from the merged configuration (platform defaults + application infra.yaml + enforcer locks).
