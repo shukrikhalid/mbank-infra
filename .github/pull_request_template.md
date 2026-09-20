@@ -20,3 +20,23 @@
 
 ## Risk / Rollback
 <!-- How do we roll back if this breaks? -->
+
+## AI Assistance Declaration
+
+- [ ] No AI assistance used in this PR
+- [ ] AI assistance used (GitHub Copilot)
+  - What: ________________________________
+  - Scope: ________________________________
+  - Human review completed: [ ] Yes
+
+**Note:** All code must be reviewed and validated regardless of AI usage. AI is a tool only.
+
+## Compliance Checklist
+
+- [ ] Encryption enabled for all data (at-rest and in-transit)
+- [ ] CloudTrail/audit logging configured
+- [ ] Multi-AZ/backup strategy defined for production
+- [ ] Data classification assigned (if applicable)
+- [ ] Security groups follow principle of least privilege
+- [ ] No hardcoded credentials or secrets
+- [ ] All changes are infrastructure-as-code (no manual resources)

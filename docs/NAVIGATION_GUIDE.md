@@ -216,3 +216,27 @@ Service quotas, dashboards, handover criteria:
 
 **Total Assessment Coverage: 95% ✅**  
 All files are now navigable, cross-referenced, and assessment-ready!
+
+---
+
+## 🤖 AI & Developer Standards
+
+### For All Developers
+
+- **[AI Assistance Documentation](AI_ASSISTANCE.md)** — Documentation of all AI tools used in this assessment
+- **[Copilot Instructions](../.copilot-instructions.md)** — Developer guidelines for consistent, compliant infrastructure code
+- **[PR Compliance Template](../.github/pull_request_template.md)** — AI disclosure and compliance checklist
+- **[Compliance Standards](control-matrix.md)** — Non-negotiable security requirements
+
+### Key Principles
+
+- ✅ **Encryption mandatory** for all production data (at-rest and in-transit)
+- ✅ **Audit logging required** for all changes (CloudTrail)
+- ✅ **Multi-AZ / DR configured** for production workloads
+- ✅ **Data classification assigned** per sensitivity level
+- ✅ **AI is a tool** — not a substitute for professional judgment
+- ✅ **Human review required** for all AI-assisted code
+
+### Automated Compliance Checks
+
+- [Copilot PR Screening Workflow](.github/workflows/copilot-screening.yml) — Automated encryption, logging, and multi-AZ verification

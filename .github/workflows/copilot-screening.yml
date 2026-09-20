@@ -1,0 +1,70 @@
+name: Copilot PR Screening
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**.tf'
+      - '**/infra.yaml'
+      - '**/env/*.yaml'
+
+jobs:
+  compliance-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Check for Encryption
+        run: |
+          echo "Checking for encryption compliance..."
+          if grep -r "storage_encrypted.*false" --include="*.tf" . 2>/dev/null; then
+            echo "❌ ERROR: Found unencrypted storage"
+            exit 1
+          fi
+          if grep -r "encrypted\s*=\s*false" --include="*.tf" . 2>/dev/null; then
+            echo "❌ ERROR: Found unencrypted resource"
+            exit 1
+          fi
+          echo "✅ Encryption checks passed"
+      
+      - name: Check CloudTrail Logging
+        run: |
+          echo "Checking CloudTrail configuration..."
+          if [ -f "org/security/cloudtrail.tf" ]; then
+            if ! grep -q "enable_logging = true" org/security/cloudtrail.tf; then
+              echo "❌ ERROR: CloudTrail logging not enabled"
+              exit 1
+            fi
+          fi
+          echo "✅ CloudTrail checks passed"
+      
+      - name: Check Multi-AZ Configuration
+        run: |
+          echo "Checking Multi-AZ configuration..."
+          if grep -r "multi_az.*=.*false" --include="*.tf" org/ 2>/dev/null; then
+            echo "⚠️ WARNING: Production resources should be Multi-AZ"
+          fi
+          echo "✅ Multi-AZ review complete"
+      
+      - name: Validate Data Classification
+        run: |
+          echo "Checking data classification in prod configs..."
+          if [ -d "applications" ]; then
+            for file in applications/*/env/prod.yaml 2>/dev/null; do
+              if [ -f "$file" ]; then
+                if ! grep -q "data_classification" "$file"; then
+                  echo "⚠️ WARNING: data_classification not specified in $file"
+                fi
+              fi
+            done
+          fi
+          echo "✅ Data classification review complete"
+      
+      - name: Report Results
+        run: |
+          echo "✅ All compliance checks complete"
+          echo ""
+          echo "Manual review required for:"
+          echo "  - Data sensitivity assessment"
+          echo "  - Compliance requirement validation"
+          echo "  - Backup and retention policies"
