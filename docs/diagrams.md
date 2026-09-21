@@ -167,7 +167,7 @@ graph LR
 
 ```mermaid
 graph TD
-    A["1. Load infra.yaml<br/>Shared app config"] --> B["2. Load defaults<br/>[platform/defaults/{env}.yaml](../../../platform/defaults/)"]
+    A["1. Load infra.yaml<br/>Shared app config"] --> B["2. Load defaults<br/>[platform/defaults/{env}.yaml](../platform/defaults/)"]
     B --> C["3. Deep Merge<br/>app + defaults"]
     C --> D["4. Load env overrides<br/>applications/app/env/env.yaml"]
     D --> E["5. Deep Merge<br/>environment specific"]
@@ -222,12 +222,12 @@ If app team submits `storage_encrypted: false` → enforcer overrides to `true`,
 **Zero compliance drift guaranteed.**
 
 **Merge Priority (Left-to-Right):**
-1. **Lowest:** [platform/defaults/{env}.yaml](../../../platform/defaults/) (org baseline)
-2. **Medium:** [applications/{app}/infra.yaml](../../../applications/) (app definition)
-3. **Highest:** [applications/{app}/env/{env}.yaml](../../../applications/) (environment override)
+1. **Lowest:** [platform/defaults/{env}.yaml](../platform/defaults/) (org baseline)
+2. **Medium:** [applications/{app}/infra.yaml](../applications/) (app definition)
+3. **Highest:** [applications/{app}/env/{env}.yaml](../applications/) (environment override)
 
 > **Example:** Payment API team:
-> 1. Creates [applications/payment-api/env/prod.yaml](../../../applications/payment/env/prod.yaml) with cpu: 1024
+> 1. Creates [applications/payment-api/env/prod.yaml](../applications/payment/env/prod.yaml) with cpu: 1024
 > 2. Pipeline merges with platform/defaults/prod.yaml
 > 3. Enforcer locks encryption=true, backup_retention=2555d (BNM)
 > 4. Output: terraform.tfvars.json + module.tf ready to deploy

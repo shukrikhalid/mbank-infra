@@ -6,7 +6,7 @@ Complete reference for Mbank infrastructure platform modules. Each module is a r
 
 ## ECS Service Module
 
-**Location:** [platform/modules/ecs-service/](../../../platform/modules/ecs-service/)
+**Location:** [platform/modules/ecs-service/](../platform/modules/ecs-service/)
 
 ### What It Provisions
 - ECS Fargate cluster with container orchestration
@@ -58,7 +58,7 @@ Complete reference for Mbank infrastructure platform modules. Each module is a r
 
 ## EC2 Auto Scaling Module
 
-**Location:** [platform/modules/ec2-autoscaling/](../../../platform/modules/ec2-autoscaling/)
+**Location:** [platform/modules/ec2-autoscaling/](../platform/modules/ec2-autoscaling/)
 
 ### What It Provisions
 - Auto Scaling Group (ASG) across 3 AZs for high availability
@@ -102,7 +102,7 @@ Complete reference for Mbank infrastructure platform modules. Each module is a r
 
 ## EKS Workload Module
 
-**Location:** [platform/modules/eks-workload/](../../../platform/modules/eks-workload/)
+**Location:** [platform/modules/eks-workload/](../platform/modules/eks-workload/)
 
 ### What It Provisions
 - Kubernetes namespace with resource quotas and limits
@@ -138,7 +138,7 @@ Complete reference for Mbank infrastructure platform modules. Each module is a r
 
 ## Aurora RDS Module
 
-**Location:** [platform/modules/aurora/](../../../platform/modules/aurora/)
+**Location:** [platform/modules/aurora/](../platform/modules/aurora/)
 
 ### What It Provisions
 - RDS Aurora cluster (MySQL or PostgreSQL) with Multi-AZ deployment
@@ -184,7 +184,7 @@ Complete reference for Mbank infrastructure platform modules. Each module is a r
 
 ## DynamoDB Module
 
-**Location:** [platform/modules/dynamodb/](../../../platform/modules/dynamodb/)
+**Location:** [platform/modules/dynamodb/](../platform/modules/dynamodb/)
 
 ### What It Provisions
 - DynamoDB table with KMS encryption and PITR
@@ -228,7 +228,7 @@ Complete reference for Mbank infrastructure platform modules. Each module is a r
 
 ## ElastiCache Module
 
-**Location:** [platform/modules/elasticache/](../../../platform/modules/elasticache/)
+**Location:** [platform/modules/elasticache/](../platform/modules/elasticache/)
 
 ### What It Provisions
 - ElastiCache replication group (Redis or Valkey) with Multi-AZ + auto-failover
@@ -269,7 +269,7 @@ Complete reference for Mbank infrastructure platform modules. Each module is a r
 
 ## S3 Bucket Module
 
-**Location:** [platform/modules/s3-bucket/](../../../platform/modules/s3-bucket/)
+**Location:** [platform/modules/s3-bucket/](../platform/modules/s3-bucket/)
 
 ### What It Provisions
 - S3 bucket with globally unique name (app-suffix-env-accountid)
@@ -313,7 +313,7 @@ Complete reference for Mbank infrastructure platform modules. Each module is a r
 
 ## Secrets Manager Module
 
-**Location:** [platform/modules/secrets/](../../../platform/modules/secrets/)
+**Location:** [platform/modules/secrets/](../platform/modules/secrets/)
 
 ### What It Provisions
 - Secrets Manager secrets (one per secret name in list)
@@ -350,7 +350,7 @@ Complete reference for Mbank infrastructure platform modules. Each module is a r
 
 ## WAF Module
 
-**Location:** [platform/modules/waf/](../../../platform/modules/waf/)
+**Location:** [platform/modules/waf/](../platform/modules/waf/)
 
 ### What It Provisions
 - AWS WAF v2 Web ACL with managed rules
@@ -395,7 +395,7 @@ Complete reference for Mbank infrastructure platform modules. Each module is a r
 
 ## Monitoring Module
 
-**Location:** [platform/modules/monitoring/](../../../platform/modules/monitoring/)
+**Location:** [platform/modules/monitoring/](../platform/modules/monitoring/)
 
 ### What It Provisions
 - SNS topic for alarm notifications (KMS encrypted)

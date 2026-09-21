@@ -118,13 +118,14 @@ mbank-infra/                              ← mono-repo root
 │
 ├── docs/
 │   ├── README.md                          ← Documentation index
+│   ├── IMPLEMENTATION_SUMMARY.md          ← Project completion status and overview
+│   ├── NAVIGATION_GUIDE.md                ← Master index with clickable links to all files
 │   ├── getting-started.md                 ← App team onboarding guide
 │   ├── account-strategy.md                ← 2-account model per team, audit controls
 │   ├── infra-yaml-reference.md            ← Full attribute reference for infra.yaml + env/*.yaml
 │   ├── platform-modules.md                ← Available modules + what each provisions + pricing
 │   ├── iac-strategy.md                    ← Terraform vs CDK decision + trade-offs
 │   ├── mono-repo-structure.md             ← This file
-│   ├── completion-status.md               ← Implementation checklist
 │   ├── diagrams/
 │   │   └── (Mermaid diagrams embedded in diagrams.md)
 │   └── runbooks/

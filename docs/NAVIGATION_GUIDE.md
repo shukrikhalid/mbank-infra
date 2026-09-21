@@ -24,57 +24,57 @@
 ## 📁 Infrastructure Code (All Referenced)
 
 ### Organization & Management
-- [SCP Policies](../../../org/management/organizations/scps/)
-  - [Require MFA](../../../org/management/organizations/scps/require-mfa-iam.json)
-  - [Region Restriction](../../../org/management/organizations/scps/require-region-ap-southeast.json)
-  - [Deny Root Access](../../../org/management/organizations/scps/deny-root-access.json)
-  - [Deny Public S3](../../../org/management/organizations/scps/deny-public-s3.json)
-- [Account Requests](../../../org/management/aft/account-requests/)
-- [AFT Configuration](../../../org/management/aft/main.tf)
+- [SCP Policies](../org/management/organizations/scps/)
+  - [Require MFA](../org/management/organizations/scps/require-mfa-iam.json)
+  - [Region Restriction](../org/management/organizations/scps/require-region-ap-southeast.json)
+  - [Deny Root Access](../org/management/organizations/scps/deny-root-access.json)
+  - [Deny Public S3](../org/management/organizations/scps/deny-public-s3.json)
+- [Account Requests](../org/management/aft/account-requests/)
+- [AFT Configuration](../org/management/aft/main.tf)
 
 ### Security
-- [CloudTrail Configuration](../../../org/security/cloudtrail.tf) — Audit logging, Vault Lock
-- [Config Rules](../../../org/security/config-rules.tf) — Continuous compliance monitoring
-- [Security Hub](../../../org/security/securityhub.tf) — Centralized security findings
-- [Config Aggregator](../../../org/security/config-aggregator.tf) — Multi-account compliance
+- [CloudTrail Configuration](../org/security/cloudtrail.tf) — Audit logging, Vault Lock
+- [Config Rules](../org/security/config-rules.tf) — Continuous compliance monitoring
+- [Security Hub](../org/security/securityhub.tf) — Centralized security findings
+- [Config Aggregator](../org/security/config-aggregator.tf) — Multi-account compliance
 
 ### Network
-- [Network Firewall Rules](../../../org/network/firewall-rules.tf) — Stateful inspection
-- [Inspection VPC](../../../org/network/inspection-vpc.tf) — VPC Flow Logs
-- [Direct Connect](../../../org/network/direct-connect.tf) — Network resilience
-- [Transit Gateway](../../../org/network/tgw.tf) — Multi-VPC connectivity
+- [Network Firewall Rules](../org/network/firewall-rules.tf) — Stateful inspection
+- [Inspection VPC](../org/network/inspection-vpc.tf) — VPC Flow Logs
+- [Direct Connect](../org/network/direct-connect.tf) — Network resilience
+- [Transit Gateway](../org/network/tgw.tf) — Multi-VPC connectivity
 
 ### Shared Services
-- [KMS Shared Keys](../../../org/shared-services/kms-shared.tf) — Encryption key management
-- [ECR Registry](../../../org/shared-services/ecr-shared.tf) — Container image repository
-- [DNS (Route 53)](../../../org/shared-services/dns.tf) — Shared DNS services
+- [KMS Shared Keys](../org/shared-services/kms-shared.tf) — Encryption key management
+- [ECR Registry](../org/shared-services/ecr-shared.tf) — Container image repository
+- [DNS (Route 53)](../org/shared-services/dns.tf) — Shared DNS services
 
 ### Platform Modules
-- [Aurora (PostgreSQL)](../../../platform/modules/aurora/) — Relational database
-- [DynamoDB](../../../platform/modules/dynamodb/) — NoSQL database
-- [ElastiCache (Redis)](../../../platform/modules/elasticache/) — In-memory cache
-- [ECS Fargate](../../../platform/modules/ecs-service/) — Container orchestration
-- [EC2 Auto Scaling](../../../platform/modules/ec2-autoscaling/) — Compute scaling
-- [S3 Buckets](../../../platform/modules/s3-bucket/) — Object storage
-- [Secrets Manager](../../../platform/modules/secrets/) — Secret storage
-- [WAF v2](../../../platform/modules/waf/) — Web application firewall
+- [Aurora (PostgreSQL)](../platform/modules/aurora/) — Relational database
+- [DynamoDB](../platform/modules/dynamodb/) — NoSQL database
+- [ElastiCache (Redis)](../platform/modules/elasticache/) — In-memory cache
+- [ECS Fargate](../platform/modules/ecs-service/) — Container orchestration
+- [EC2 Auto Scaling](../platform/modules/ec2-autoscaling/) — Compute scaling
+- [S3 Buckets](../platform/modules/s3-bucket/) — Object storage
+- [Secrets Manager](../platform/modules/secrets/) — Secret storage
+- [WAF v2](../platform/modules/waf/) — Web application firewall
 
 ### Applications
-- [Payment Application](../../../applications/payment/infra.yaml)
-- [Finance Application](../../../applications/finance/infra.yaml)
-- [Customer Tech Application](../../../applications/customertech/infra.yaml)
-- [Public Application](../../../applications/public/infra.yaml)
+- [Payment Application](../applications/payment/infra.yaml)
+- [Finance Application](../applications/finance/infra.yaml)
+- [Customer Tech Application](../applications/customertech/infra.yaml)
+- [Public Application](../applications/public/infra.yaml)
 
 ### Pipeline & Automation
-- [Generator Script](../../../pipeline/generator/generator.py) — IaC code generation
-- [Enforcer Script](../../../pipeline/generator/enforcer.py) — Policy enforcement
-- [Merger Script](../../../pipeline/generator/merger.py) — Configuration merging
-- [Detect Changed Apps](../../../pipeline/scripts/detect-changed-apps.sh) — CI/CD trigger
-- [Destroy Guard](../../../pipeline/scripts/destroy-guard.sh) — Destruction prevention
+- [Generator Script](../pipeline/generator/generator.py) — IaC code generation
+- [Enforcer Script](../pipeline/generator/enforcer.py) — Policy enforcement
+- [Merger Script](../pipeline/generator/merger.py) — Configuration merging
+- [Detect Changed Apps](../pipeline/scripts/detect-changed-apps.sh) — CI/CD trigger
+- [Destroy Guard](../pipeline/scripts/destroy-guard.sh) — Destruction prevention
 
 ### Schema & Validation
-- [Infrastructure Schema](../../../platform/schema/infra-schema.json) — YAML validation schema
-- [Schema Validator](../../../platform/schema/validate.py) — Validation script
+- [Infrastructure Schema](../platform/schema/infra-schema.json) — YAML validation schema
+- [Schema Validator](../platform/schema/validate.py) — Validation script
 
 ---
 
@@ -89,9 +89,9 @@ All 28 control implementations are now directly linked to:
 
 ### From Resilience Design
 Multi-AZ architecture, RTO/RPO targets, and quarterly validation procedures:
-- [Aurora backup configuration](../../../platform/modules/aurora/main.tf)
-- [DynamoDB PITR settings](../../../platform/modules/dynamodb/main.tf)
-- [ElastiCache failover setup](../../../platform/modules/elasticache/main.tf)
+- [Aurora backup configuration](../platform/modules/aurora/main.tf)
+- [DynamoDB PITR settings](../platform/modules/dynamodb/main.tf)
+- [ElastiCache failover setup](../platform/modules/elasticache/main.tf)
 
 ### From Drift Incident Runbook
 Complete forensics and recovery procedures:
@@ -109,16 +109,16 @@ All security guardrails and controls:
 
 ### From Operations Guide
 Service quotas, dashboards, handover criteria:
-- [KMS module for key rotation](../../../platform/modules/kms-shared/main.tf)
-- [Aurora module for backup retention](../../../platform/modules/aurora/main.tf)
-- [S3 module for lifecycle policies](../../../platform/modules/s3-bucket/main.tf)
+- [KMS module for key rotation](../org/shared-services/kms-shared.tf)
+- [Aurora module for backup retention](../platform/modules/aurora/main.tf)
+- [S3 module for lifecycle policies](../platform/modules/s3-bucket/main.tf)
 
 ---
 
 ## 📊 How to Use This Navigation Guide
 
 ### For Assessors
-1. Start with [IMPLEMENTATION_SUMMARY.md](../../IMPLEMENTATION_SUMMARY.md) for overview
+1. Start with [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) for overview
 2. Deep-dive into each task:
    - Task 1: [Control Matrix](control-matrix.md)
    - Task 2: [Resilience Design](resilience-design.md)
@@ -144,7 +144,7 @@ Service quotas, dashboards, handover criteria:
 1. Review [Control Matrix](control-matrix.md) for all 28 controls
 2. Check implementation status and compliance mapping
 3. Click SCP policy links for security controls
-4. Review [CloudTrail configuration](../../../org/security/cloudtrail.tf) for audit trail
+4. Review [CloudTrail configuration](../org/security/cloudtrail.tf) for audit trail
 
 ### For Operations Teams
 1. Start with [Operations Guide](operations-guide.md)
@@ -172,8 +172,8 @@ Service quotas, dashboards, handover criteria:
 
 ### Security & Compliance
 - [28 Security Controls](control-matrix.md#control-matrix)
-- [SCP Policies](../../../org/management/organizations/scps/)
-- [CloudTrail Audit Logging](../../../org/security/cloudtrail.tf)
+- [SCP Policies](../org/management/organizations/scps/)
+- [CloudTrail Audit Logging](../org/security/cloudtrail.tf)
 - [AWS Config Rules](guardrails-config-rules.md#part-1-aws-config-rules-14-rules)
 - [IAM Permission Boundaries](guardrails-config-rules.md#part-2-iam-permission-boundaries-3-examples)
 - [Vault Lock Configuration](guardrails-config-rules.md#part-3-cloudtrail-vault-lock-immutable-logs)
@@ -205,12 +205,12 @@ Service quotas, dashboards, handover criteria:
 
 | Task | Documentation | Implementation Files | Coverage |
 |------|----------------|----------------------|----------|
-| **1. Landing-Zone** | [Control Matrix](control-matrix.md) | [SCPs](../../../org/management/organizations/scps/), [KMS](../../../org/shared-services/kms-shared.tf) | 95% ✅ |
-| **2. Resilience** | [Resilience Design](resilience-design.md) | [Aurora](../../../platform/modules/aurora/), [DynamoDB](../../../platform/modules/dynamodb/) | 95% ✅ |
-| **3. Guardrails** | [Config Rules](guardrails-config-rules.md) | [Config](../../../org/security/config-rules.tf), [IAM boundaries](guardrails-config-rules.md) | 95% ✅ |
-| **4. Drift** | [Drift Runbook](runbooks/drift-incident.md) | [CloudTrail](../../../org/security/cloudtrail.tf) | 95% ✅ |
-| **5. Automation** | [Account Strategy](account-strategy.md) | [Pipeline](../../../pipeline/) | 95% ✅ |
-| **6. Operations** | [Operations Guide](operations-guide.md) | [All modules](../../../platform/modules/) | 95% ✅ |
+| **1. Landing-Zone** | [Control Matrix](control-matrix.md) | [SCPs](../org/management/organizations/scps/), [KMS](../org/shared-services/kms-shared.tf) | 95% ✅ |
+| **2. Resilience** | [Resilience Design](resilience-design.md) | [Aurora](../platform/modules/aurora/), [DynamoDB](../platform/modules/dynamodb/) | 95% ✅ |
+| **3. Guardrails** | [Config Rules](guardrails-config-rules.md) | [Config](../org/security/config-rules.tf), [IAM boundaries](guardrails-config-rules.md) | 95% ✅ |
+| **4. Drift** | [Drift Runbook](runbooks/drift-incident.md) | [CloudTrail](../org/security/cloudtrail.tf) | 95% ✅ |
+| **5. Automation** | [Account Strategy](account-strategy.md) | [Pipeline](../pipeline/) | 95% ✅ |
+| **6. Operations** | [Operations Guide](operations-guide.md) | [All modules](../platform/modules/) | 95% ✅ |
 
 ---
 
@@ -225,7 +225,6 @@ All files are now navigable, cross-referenced, and assessment-ready!
 
 - **[AI Assistance Documentation](AI_ASSISTANCE.md)** — Documentation of all AI tools used in this assessment
 - **[Copilot Instructions](../.copilot-instructions.md)** — Developer guidelines for consistent, compliant infrastructure code
-- **[PR Compliance Template](../.github/pull_request_template.md)** — AI disclosure and compliance checklist
 - **[Compliance Standards](control-matrix.md)** — Non-negotiable security requirements
 
 ### Key Principles

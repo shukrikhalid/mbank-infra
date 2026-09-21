@@ -608,4 +608,4 @@ A: Test in staging (dev account, prod-like config). Then use terraform plan (dry
 - [infra-yaml-reference.md](infra-yaml-reference.md) — Application configuration schema
 - [Platform Modules](platform-modules.md) — Available infrastructure modules
 - [IaC Strategy](iac-strategy.md) — Terraform vs CDK decision
-- [Implementation Status](completion-status.md) — Task checklist
+- [Implementation Summary](IMPLEMENTATION_SUMMARY.md) — Project completion status and overview
