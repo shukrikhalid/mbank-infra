@@ -215,7 +215,6 @@ graph TB
 
 ### Operations & Troubleshooting
 - **[Drift Incident Runbook](docs/runbooks/drift-incident.md)** — Unauthorized route table change detection & recovery
-- **[Implementation Status](docs/completion-status.md)** — Task checklist (18/18 complete)
 
 ---
 
@@ -361,33 +360,7 @@ See [Platform Modules Reference](docs/platform-modules.md) for full details.
 
 ---
 
-## 📊 Implementation Status
-
-**Completion:** 18/18 Tasks ✅ **100%**
-
-### ✅ Completed
-- Task 1-8: Organization, security, network, shared services (org layer)
-- Task 9-11g: Platform modules (ecs, ec2, eks, aurora, dynamodb, elasticache, s3, secrets, waf, monitoring)
-- Task 12: infra.yaml JSON Schema + validation
-- Task 13: Pipeline (generator, merger, enforcer, scripts)
-- Task 14: GitHub Actions CI/CD workflows
-- Task 15: Application infra.yaml files
-- Task 16: Platform defaults + compliance validation
-- Task 17: Architecture diagrams (3 SVG)
-- Task 18: Documentation (infra-yaml-reference, platform-modules)
-
-### 🆕 In Progress (Phase 1-2)
-- Phase 1: Documentation consolidation & account strategy ← **YOU ARE HERE**
-- Phase 2: Application config restructuring (env folders) ← **NEXT**
-- Phase 3: AFT account provisioning (8 new workload accounts)
-- Phase 4: Network & SCP policies
-- Phase 5: CI/CD validation
-
-See [Completion Status](docs/completion-status.md) for full checklist.
-
----
-
-## 📖 Governance
+##  Governance
 
 ### Code Review (CODEOWNERS)
 
